@@ -28,7 +28,15 @@ The player must guide Mario to reach the objective as many times as possible whi
 
 ## Required Hardware
 - Nexys A7-100T FPGA Board
-- VGA Monitor & VGA Cable
+
+![image](nexys.jpg)
+
+- VGA Monitor & VGA Cable ( or VGA to HDMI adapter)
+
+![image](monitor.png)
+
+![image](vga.jpg)
+
 
 ## Images / Diagrams
 
