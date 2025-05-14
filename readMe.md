@@ -452,9 +452,8 @@ Gameplay shown above.
 
 ![image](scoring.gif)
 
-Scoring system shown above.
-
 Scoring working as shown above.
+
 ## Summary and Contributions
 Ashish - I worked on building the buillding the collision logic which includes mario climbing up and down the ladders, the scoring logic and built the mario_logic.vhd file, and platforms_and_ladders.vhd. I also had possession of the board and made minor changes and improvements to the game.
 
