@@ -165,7 +165,7 @@ seg   : OUT STD_LOGIC_VECTOR (6 DOWNTO 0);
 - `anode`: Active-low anode control for each digit
 - `seg`: Segment pattern for current digit
 
-##Module Overview and Modifications
+## Module Overview and Modifications
 
 We started off with Lab 6 as the basis for this project. We reused some things such as the bat code as well as the vga_sync and leddec16 to start with the project, but changed up a lot with the bat code (used it as the basis for Mario's horizontal movement). The vga_sync, leddec16, and clk files are fully reused and nothing was changed to them. This project was built from scratch for the modules shown below.
 
@@ -300,7 +300,7 @@ end loop;
   ```
 Mario won't really float above platforms and makes sure that he lands cleanly after climbing.
 
-###Barrel Logic
+### Barrel Logic
 
 ***```barrel_logic.vhd```***
   ```
@@ -340,7 +340,7 @@ end if;
   ```
 Direction flips whenever the barrel hits either boundary (left or right of the screen)
 
-###Platforms and Ladders
+### Platforms and Ladders
 
 ***```platforms_and_ladders.vhd```***
 ```
@@ -381,7 +381,7 @@ end if;
   ```
 Each if and elsif statement represents a zone of ladders, which is a vertical block of pixels that allows Mario to climb. x and y must be within bounds and the ladders are 6 pixels wide. This is how Mario traverses the platforms.
 
-###Kong
+### Kong
 
 ***```kong_logic.vhd```***
   ```
