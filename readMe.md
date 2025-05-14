@@ -411,4 +411,14 @@ end if;
 DK moves right if he's not at an edge (x+4) and when he reaches x = 620 he moves left.
 
 ## Summary and Contributions
+Ashish - I worked on building the buillding the collision logic which includes mario climbing up and down the ladders, the scoring logic and built the mario_logic.vhd file, and platforms_and_ladders.vhd. I also had possession of the board and made minor changes annd improvements to the game. Some changes included 
+Yazen - I worked on building the kong_logic.vhd, barrel_logic, helped with the collision logic, and the objective randomness (although it was not true random, the location changes are the same for each run of the game). I also helped with making some quality of life changes like making the platform colors a little darker than Mario by making the colors in vga_sync.vhd 4 bits.
+
+### Timeline
+- Week of 4/21 - Brainstorming ideas and writing down the structure the game would follow
+- Week of 4/28 - Started to work on the game by taking components of the Pong lab, and started to build the platforms and ladders file
+- Week of 5/05 - started to reverse-engineer pong.vhd, and bat_n_ball.vhd from lab 6 and build the kong_logic, barrel_logic, and some part of mario_logic. The following weekend, we worked on building the collision logic and how work with mario climbing ladders, and put all the components in the top file: donkey_kong.vhd.
+
+### Challenges faced and how we would fix them if given more time
+For starters, we had issues with the Mario jumping mechanic, where he wouldnt jump back down. Initially, our approach was to add a gravity constant that way he will come back down after he jumps, but there were complications as he would keep falling. We fixed this by removing the gravity constant all-together and implemented a logic where his velocity changes after he went a number of pixels off the ground, which was 9. Another challenge that we faced was whenever Mario climbs up a ladder, he would not snap on to the next platform, but we were able to fix this by adding a small overhead, but in return we had to sacrifice how the game looks. Mario looks like he would be floating, but it made the game a little more playable. In the game there was another bug, when mario climbs up a ladder all the way and move to the right or left, he wouldn't be able to climb down the ladder unless he jumps, which brings him closer to the ground. The jump would being him back to 4 pixels above the groud (again we added invisible pixel logic so mario can climb down the ladder). If given more time, we would try a more robust logic that way mario would actually be touching the platforms when moving around, and also try to add sprites to make the game as close to the original as possible.  
 
