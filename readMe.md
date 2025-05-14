@@ -167,7 +167,7 @@ seg   : OUT STD_LOGIC_VECTOR (6 DOWNTO 0);
 
 ##Module Overview and Modifications
 
-We started off with Lab 6 as the basis for this project. We reused some things such as the bat code as well as the vga_sync to start with the project, but changed up a lot. This project was built from scratch
+We started off with Lab 6 as the basis for this project. We reused some things such as the bat code as well as the vga_sync and leddec16 to start with the project, but changed up a lot with the bat code (used it as the basis for Mario's horizontal movement). The vga_sync, leddec16, and clk files are fully reused and nothing was changed to them. This project was built from scratch for the modules shown below.
 
 
 ***```donkey_kong.vhd```***
@@ -409,7 +409,6 @@ else
 end if;
   ```
 DK moves right if he's not at an edge (x+4) and when he reaches x = 620 he moves left.
-
 
 ## Summary and Contributions
 
