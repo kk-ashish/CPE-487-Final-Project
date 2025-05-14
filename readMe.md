@@ -57,6 +57,10 @@ The player must guide Mario to reach the objective as many times as possible whi
 6. **Run Implementation**
 7. **Generate Bitstream**
 8. **Open Hardware Manager** and **Program the Device**
+
+## First Build
+
+![image](early.gif)
  
 ## Inputs and Outputs
 
@@ -167,7 +171,7 @@ seg   : OUT STD_LOGIC_VECTOR (6 DOWNTO 0);
 
 ## Module Overview and Modifications
 
-We started off with Lab 6 as the basis for this project. We reused some things such as the bat code as well as the vga_sync and leddec16 to start with the project, but changed up a lot with the bat code (used it as the basis for Mario's horizontal movement). The vga_sync, leddec16, and clk files are fully reused and nothing was changed to them. This project was built from scratch for the modules shown below.
+We started off with Lab 6 as the basis for this project. We reused some things such as the bat code as well as the vga_sync and leddec16 to start with the project, but changed up a lot with the bat code (used it as the basis for Mario's horizontal movement). The vga_sync (besides changing the colors to 4 bit), leddec16, and clk files are fully reused and nothing was changed to them. This project was built from scratch for the modules shown below.
 
 
 ***```donkey_kong.vhd```***
@@ -209,6 +213,36 @@ The code above is a snippet of the top level module. The file as a whole is the 
 A for loop is responsible for checking all the barrles, and sees if Mario's bounding box overlaps with any of the barrel's bounding box. It checks if the bordering pixels (top, bottom, left, right) of Mario overlap with the bordering pixels of the barrels, and if so, then a reset is triggered and the score is set to zero.
 
 The same logic is used for checking for collision with the objective and Donkey Kong, except an if statement is used since there doesn't have to be a loop for multiple objects. It checks if Mario collides with the objective, and if so, a reset is triggered. Then the **rng_counter** is used to generate a new x position for the objective, and the score is incremented by 1 since the objective was reached. The collision with Donkey Kong is simple, just checks for a collision, and if so a reset is triggered and the score is reset to zero.
+
+***```donkey_kong.vhd```***
+  ```
+signal score : unsigned(15 downto 0) := (others => '0');
+signal score_display : STD_LOGIC_VECTOR(15 downto 0);
+
+
+if mario hits objective then
+    score <= score + 1;
+  ```
+**signal score** is the value that counts the wins and is only incremented when Mario reaches the objective.
+
+***```donkey_kong.vhd```***
+  ```
+score_display <= std_logic_vector(score);
+led <= score_display;
+  ```
+Sends the 16 bit **score** to the Nexys board
+
+***```donkey_kong.vhd```***
+  ```
+score_display_driver : leddec16
+    port map (
+        dig   => led_mpx,
+        data  => score_display,
+        anode => anode,
+        seg   => seg
+    );
+  ```
+Connects the **leddec16** to the current score. The **leddec16** handles the display logic.
 
 ### mario_logic.vhd
 
@@ -410,8 +444,20 @@ end if;
   ```
 DK moves right if he's not at an edge (x+4) and when he reaches x = 620 he moves left.
 
+# Gameplay
+
+![image](gameplay.gif)
+
+Gameplay shown above.
+
+![image](scoring.gif)
+
+Scoring system shown above.
+
+Scoring working as shown above.
 ## Summary and Contributions
-Ashish - I worked on building the buillding the collision logic which includes mario climbing up and down the ladders, the scoring logic and built the mario_logic.vhd file, and platforms_and_ladders.vhd. I also had possession of the board and made minor changes annd improvements to the game. Some changes included 
+Ashish - I worked on building the buillding the collision logic which includes mario climbing up and down the ladders, the scoring logic and built the mario_logic.vhd file, and platforms_and_ladders.vhd. I also had possession of the board and made minor changes and improvements to the game.
+
 Yazen - I worked on building the kong_logic.vhd, barrel_logic, helped with the collision logic, and the objective randomness (although it was not true random, the location changes are the same for each run of the game). I also helped with making some quality of life changes like making the platform colors a little darker than Mario by making the colors in vga_sync.vhd 4 bits.
 
 ### Timeline
@@ -420,5 +466,5 @@ Yazen - I worked on building the kong_logic.vhd, barrel_logic, helped with the c
 - Week of 5/05 - started to reverse-engineer pong.vhd, and bat_n_ball.vhd from lab 6 and build the kong_logic, barrel_logic, and some part of mario_logic. The following weekend, we worked on building the collision logic and how work with mario climbing ladders, and put all the components in the top file: donkey_kong.vhd.
 
 ### Challenges faced and how we would fix them if given more time
-For starters, we had issues with the Mario jumping mechanic, where he wouldnt jump back down. Initially, our approach was to add a gravity constant that way he will come back down after he jumps, but there were complications as he would keep falling. We fixed this by removing the gravity constant all-together and implemented a logic where his velocity changes after he went a number of pixels off the ground, which was 9. Another challenge that we faced was whenever Mario climbs up a ladder, he would not snap on to the next platform, but we were able to fix this by adding a small overhead, but in return we had to sacrifice how the game looks. Mario looks like he would be floating, but it made the game a little more playable. In the game there was another bug, when mario climbs up a ladder all the way and move to the right or left, he wouldn't be able to climb down the ladder unless he jumps, which brings him closer to the ground. The jump would being him back to 4 pixels above the groud (again we added invisible pixel logic so mario can climb down the ladder). If given more time, we would try a more robust logic that way mario would actually be touching the platforms when moving around, and also try to add sprites to make the game as close to the original as possible.  
+For starters, we had issues with the Mario jumping mechanic, where he wouldnt jump back down. Initially, our approach was to add a gravity constant that way he will come back down after he jumps, but there were complications as he would keep falling. We fixed this by removing the gravity constant all-together and implemented a logic where his velocity changes after he went a number of pixels off the ground, which was 9. Another challenge that we faced was whenever Mario climbs up a ladder, he would not snap on to the next platform, but we were able to fix this by adding a small overhead, but in return we had to sacrifice how the game looks. Mario looks like he would be floating, but it made the game a little more playable. In the game there was another bug, when mario climbs up a ladder all the way and move to the right or left, he wouldn't be able to climb down the ladder unless he jumps, which brings him closer to the ground. The jump would being him back to 4 pixels above the groud (again we added invisible pixel logic so mario can climb down the ladder). If given more time, we would try a more robust logic that way mario would actually be touching the platforms when moving around, and also try to add sprites to make the game as close to the original as possible.
 
