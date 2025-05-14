@@ -1,38 +1,44 @@
 # Donkey Kong FPGA Game - CPE 487 Final Project
 
 ## Description
-This project recreates the classic Donkey Kong-style platformer game on the **Nexys A7-100T FPGA board** using VHDL. The game is rendered on a VGA monitor and features:
+This project recreates the classic Donkey Kong arcade game on the **Nexys A7-100T FPGA board** using VHDL. The game is rendered on a VGA monitor and features:
 
 - A controllable Mario character
 - Moving barrels that Mario must avoid
-- A randomly-placed objective block that Mario must reach to gain points
-- A static Donkey Kong character as a hazard
+- A randomly-placed objective (the princess) that Mario must reach to gain points
+- Donkey Kong character as a hazard
 - Real-time score display on the **7-segment LED display**
 
+Here is the Donkey Kong game that was the basis for our project. We decided to try and recreate the first level, as shown below:
+
+![image](kong.png)
+
+
 ### Objective
-The player must guide Mario to collect as many objectives as possible while avoiding the barrels and Donkey Kong. 
+The player must guide Mario to reach the objective as many times as possible while avoiding the barrels and Donkey Kong. 
 - **Touching a barrel or Donkey Kong resets Mario and the score**
-- **Touching the objective resets Mario's position and increases the score by 1**
+- **Touching the objective resets Mario's position back to the start and increases the score by 1**
 
 ### Controls
 - BTNU: Mario climb up ladder
-- BTND: Mario CLimb down ladder
+- BTND: Mario climb down ladder
 - BTNL: Mario move left
 - BTNR: Mario move right
-- BTNC: Makes Mario jump
+- BTNC: Mario jumps
 
 ## Required Hardware
 - Nexys A7-100T FPGA Board
 - VGA Monitor & VGA Cable
-- 7-segment LED display on board
 
 ## Images / Diagrams
 
 #### Gameplay Screenshot
-ADD VIDEO HERE
+
+![image](gameplay.jpg)
 
 #### Module Diagram
-ADD DIAGRAM HERE
+
+![image](diagram.png)
 
 ## Steps to Run
 1. **Download all VHDL and .xdc files** from this repo
@@ -51,8 +57,9 @@ ADD DIAGRAM HERE
 6. **Run Implementation**
 7. **Generate Bitstream**
 8. **Open Hardware Manager** and **Program the Device**
+ 
+## Inputs and Outputs
 
-## Inputs & Outputs
 ### donkey_kong.vhd
 #### Inputs
 - `clk`: System clock (100 MHz)
@@ -63,6 +70,7 @@ ADD DIAGRAM HERE
 - `led`: Debug (also mirrors score)
 - `anode`, `seg`: 7-segment display outputs for real-time score
 ---
+
 ### mario_logic.vhd
 #### Inputs
 ```vhdl
@@ -157,8 +165,11 @@ seg   : OUT STD_LOGIC_VECTOR (6 DOWNTO 0);
 - `anode`: Active-low anode control for each digit
 - `seg`: Segment pattern for current digit
 
-## Modifications Made
-This project was built from scratch using base components from earlier labs (mostly Lab 6: Pong). Key contributions:
+##Module Overview and Modifications
+
+We started off with Lab 6 as the basis for this project. We reused some things such as the bat code as well as the vga_sync to start with the project, but changed up a lot. This project was built from scratch
+
+
 ***```donkey_kong.vhd```***
   ```
   process(clk_25MHz)
@@ -193,3 +204,212 @@ This project was built from scratch using base components from earlier labs (mos
       end if;
   end process;
   ```
+The code above is a snippet of the top level module. The file as a whole is the main integrator for the project and instantiates all the other files. The snippet shown above is the code responsible for detecting mario's collision with barrels, the objective, and with donkey kong.
+
+A for loop is responsible for checking all the barrles, and sees if Mario's bounding box overlaps with any of the barrel's bounding box. It checks if the bordering pixels (top, bottom, left, right) of Mario overlap with the bordering pixels of the barrels, and if so, then a reset is triggered and the score is set to zero.
+
+The same logic is used for checking for collision with the objective and Donkey Kong, except an if statement is used since there doesn't have to be a loop for multiple objects. It checks if Mario collides with the objective, and if so, a reset is triggered. Then the **rng_counter** is used to generate a new x position for the objective, and the score is incremented by 1 since the objective was reached. The collision with Donkey Kong is simple, just checks for a collision, and if so a reset is triggered and the score is reset to zero.
+
+### mario_logic.vhd
+
+This was built from scratch and is the way to control Mario.
+
+***```mario_logic.vhd```***
+  ```
+constant MARIO_WIDTH  : integer := 16;
+constant MARIO_HEIGHT : integer := 24;
+constant JUMP_FORCE   : integer := 9;
+constant GROUND_Y     : integer := 435;
+
+signal x : std_logic_vector(10 downto 0) := conv_std_logic_vector(60, 11);
+signal y : std_logic_vector(10 downto 0) := conv_std_logic_vector(GROUND_Y, 11);
+signal jumping : boolean := false;
+signal jump_height : integer := 0;
+signal y_dir : integer := 0; -- -1 = up, 1 = down, 0 = idle
+
+
+
+constant platform_levels : platform_array := (75, 155, 235, 315, 395, 435);
+  ```
+Mario is 16x24 pixles in size. **jumping** is the flag for the jump state and **platform_levels** defines the Y coordinates of the platforms for snapping.
+
+***```mario_logic.vhd```***
+  ```
+if btnr = '1' and x_int < 640 - MARIO_WIDTH then
+    x <= x + 4;
+elsif btnl = '1' and x_int > 0 then
+    x <= x - 4;
+end if;
+  ```
+This moves Mario left and right. btnL and btnR when = 1 allows Mario to move and his x position is adjusted by updating the position which moves Mario by 4 pixels per frame.
+
+***```mario_logic.vhd```***
+  ```
+if y_dir = -1 then
+    y_int := y_int - 4;
+    jump_height <= jump_height + 4;
+    if jump_height >= JUMP_FORCE * 4 then
+        y_dir <= 1; -- begin falling
+    end if;
+  ```
+Mario rises by 4 pixels per frame until the jump height is = 36. 
+
+***```mario_logic.vhd```***
+  ```
+elsif y_dir = 1 then
+    y_int := y_int + 4;
+
+    for i in 0 to 5 loop
+        if (y_int + MARIO_HEIGHT >= platform_levels(i)) and (y_int + MARIO_HEIGHT - 4 < platform_levels(i)) then
+            y_int := platform_levels(i) - MARIO_HEIGHT;
+            jumping <= false;
+            y_dir <= 0;
+        end if;
+    end loop;
+
+    if y_int + MARIO_HEIGHT >= GROUND_Y then
+        y_int := GROUND_Y - MARIO_HEIGHT;
+        jumping <= false;
+        y_dir <= 0;
+    end if;
+  ```
+Checks to see if Mario's feet are about to just touch a platofrm, and if so, he snaps to the top of that plaform and stops falling.
+
+***```mario_logic.vhd```***
+  ```
+if touching_ladder then
+    if btnu = '1' then
+        y_int := y_int - 4;
+        jumping <= false;
+        y_dir <= 0;
+    elsif btnd = '1' then
+        y_int := y_int + 4;
+        jumping <= false;
+        y_dir <= 0;
+    end if;
+  ```
+If Mario's within a ladder hitbox then he can move vertical using btnu and btnd. Ladder climbing overrides jumping logic, allowing vertical control to go up or down.
+
+***```mario_logic.vhd```***
+  ```
+for i in 0 to 5 loop
+    if (y_int + MARIO_HEIGHT) >= platform_levels(i) and (y_int + MARIO_HEIGHT) <= platform_levels(i) + 1 then
+        y_int := platform_levels(i) - MARIO_HEIGHT;
+    end if;
+end loop;
+  ```
+Mario won't really float above platforms and makes sure that he lands cleanly after climbing.
+
+###Barrel Logic
+
+***```barrel_logic.vhd```***
+  ```
+if reset = '1' then
+    x <= conv_std_logic_vector(60, 11);
+    y <= conv_std_logic_vector(GROUND_Y, 11);
+    jumping <= false;
+    y_dir <= 0;
+    jump_height <= 0;
+  ```
+This is the reset for Mario's position whenever he dies or reaches the objective. Moves his position back to the start.
+
+***```barrel_logic.vhd```***
+  ```
+barrels(i).counter <= barrels(i).counter + 1;
+if barrels(i).counter = to_unsigned(1000000, 20) then
+    barrels(i).counter <= (others => '0');
+  ```
+Movement is time controlled using an internal counter for each barrel, ensuring they only move once per 1 million clock cycles, then movement is applied
+
+***```barrel_logic.vhd```***
+  ```
+if barrels(i).dir = '1' then
+    if unsigned(barrels(i).x) < 628 then
+        barrels(i).x <= std_logic_vector(unsigned(barrels(i).x) + 1);
+    else
+        barrels(i).dir <= '0'; -- Hit edge, switch direction
+    end if;
+
+else
+    if unsigned(barrels(i).x) > 1 then
+        barrels(i).x <= std_logic_vector(unsigned(barrels(i).x) - 1);
+    else
+        barrels(i).dir <= '1'; -- Hit edge, switch direction
+    end if;
+end if;
+  ```
+Direction flips whenever the barrel hits either boundary (left or right of the screen)
+
+###Platforms and Ladders
+
+***```platforms_and_ladders.vhd```***
+```
+if (pixel_y >= 80 and pixel_y <= 85) then
+    is_platform <= '1'; 
+elsif (pixel_y >= 160 and pixel_y <= 165) then
+    is_platform <= '1'; 
+elsif (pixel_y >= 240 and pixel_y <= 245) then
+    is_platform <= '1';
+elsif (pixel_y >= 320 and pixel_y <= 325) then
+    is_platform <= '1';
+elsif (pixel_y >= 440 and pixel_y <= 479) then
+    is_platform <= '1';
+end if;
+  ```
+Each of the if and elsif statements correspond to a horizontal bar a t a fixed y position, and this is the solid ground per each level that Mario climbs. 
+
+***```platforms_and_ladders.vhd```***
+```
+process(pixel_x, pixel_y)
+begin
+    is_platform <= '0';
+    is_ladder   <= '0';
+  ```
+Default values are '0' so theres no ladder or platform unless proven otherwise.
+
+***```platforms_and_ladders.vhd```***
+```
+if (pixel_x >= 100 and pixel_x <= 105) and (pixel_y >= 80 and pixel_y <= 165) then
+    is_ladder <= '1';
+elsif (pixel_x >= 500 and pixel_x <= 505) and (pixel_y >= 160 and pixel_y <= 245) then
+    is_ladder <= '1';
+elsif (pixel_x >= 100 and pixel_x <= 105) and (pixel_y >= 240 and pixel_y <= 325) then
+    is_ladder <= '1';
+elsif (pixel_x >= 500 and pixel_x <= 505) and (pixel_y >= 320 and pixel_y <= 440) then
+    is_ladder <= '1';
+end if;
+  ```
+Each if and elsif statement represents a zone of ladders, which is a vertical block of pixels that allows Mario to climb. x and y must be within bounds and the ladders are 6 pixels wide. This is how Mario traverses the platforms.
+
+###Kong
+
+***```kong_logic.vhd```***
+  ```
+process(clk)
+begin
+    if rising_edge(clk) then
+        counter <= counter + 1;
+  ```
+Counter increments each frame, when it reaches 1,000,000 DK moves.
+
+***```kong_logic.vhd```***
+```
+if dir = '1' then
+    if x < to_unsigned(620, 11) then
+        x <= x + 4;
+    else
+        dir <= '0';
+    end if;
+else
+    if x > to_unsigned(10, 11) then
+        x <= x - 4;
+    else
+        dir <= '1';
+    end if;
+end if;
+  ```
+DK moves right if he's not at an edge (x+4) and when he reaches x = 620 he moves left.
+
+
+## Summary and Contributions
+
